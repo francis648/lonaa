@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>lonaa</title>
+  <style>
+    * {
+       margin: 0;
+       padding: 0;
+       box-sizing: border-box;
+    }
+
+    body,
+    html {
+       height: 100%; 
+       font-family: Arial, sans-serif;
+       color: white; 
+       text-align: center;
+       overflow: hidden;
+    }
+
+    /* Launch screen */
+    #start-screen {
+      position: fixed;
+      inset: 0;
+      background: black;
+      display: flex; 
+      align-items: center;
+      justify-content: center;
+      z-index: 30;
+    }
+    #start-btn {
+      padding: 20px 40px;
+      font-size: 1.5em;
+      background: linear-gradient(45deg, #ff004c, #ff9900);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      box-shadow: 0 0 15px rgba(255, 0, 76, 0.5);
+      transition: transform 0.3s ease;
+    }
+    #start-btn:hover {
+      transform: scale(1.05);
+    }
+
+    /* Auth modal */
+    #auth-screen {
+      position: fixed; 
+      inset: 0;
+      display: none; 
+      align-items: center; 
+      justify-content: center;
+      background: rgba(0,0,0,0.6); 
+      z-index: 40;
+    }
+    .auth-box {
+      width: 340px;
+      background: rgba(10,10,10,0.95);
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+      text-align: left;
+    }
+    .auth-box h2 { margin-bottom: 12px; font-size: 1.2rem; color: #fff; text-align: center; }
+    .auth-box label { display:block; margin-top:10px; font-size:0.9rem; color:#ddd; }
+    .auth-box input { width:100%; padding:10px 12px; margin-top:6px; border-radius:8px; border:none; outline:none; background: rgba(255,255,255,0.06); color:#fff; }
+    .auth-actions { display:flex; justify-content:space-between; align-items:center; margin-top:16px; }
+    #login-btn { padding:10px 18px; background: linear-gradient(45deg,#00c6ff,#0072ff); color:#fff; border:none; border-radius:8px; cursor:pointer; }
+    #cancel-auth { background: transparent; color:#ccc; border:none; cursor:pointer; font-size:0.9rem; }
+
+    .auth-error { margin-top:10px; color:#ff7b7b; font-size:0.9rem; min-height:18px; text-align:center; }
+
+    /* Main content */
+    video#bg-video { position: fixed; top: 0; left: 0; min-width: 100%; min-height: 100%; object-fit: cover; z-index: -1; }
+    .rainbow-box { display:inline-block; margin-top:60px; padding:20px 30px; border-radius:15px;
+      background: linear-gradient(90deg, red, orange, yellow, green, blue, indigo, violet);
+      background-size: 400% 400%; animation: rainbow 10s infinite; box-shadow: 0 0 15px rgba(0,0,0,0.4);
+    }
+    .rainbow-box h1 { margin:0; font-size:1.8em; background-color: rgba(0,0,0,0.3); padding:10px 20px; border-radius:10px; }
+
+    .slideshow-container { position: relative; max-width: 500px; margin: 40px auto; }
+    .slides { display: none; width: 100%; border-radius: 10px; }
+
+    /* ✅ Added fix for slideshow images */
+    .slides {
+      max-width: 100%;      /* Prevent horizontal overflow */
+      max-height: 80vh;     /* Limit height to viewport */
+    }
+    .slides img {
+      width: 100%;          /* Scale image to fit container */
+      height: auto;         /* Maintain aspect ratio */
+      object-fit: contain;  /* Ensure full image is visible */
+      border-radius: 10px;  /* Match slide corners */
+    }
+
+    .active { display: block; animation: fade 2s; }
+    
+    @keyframes fade { from { opacity: 0.4; } to { opacity: 1; } }
+    @keyframes rainbow { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+
+    .heart { position: fixed; bottom: 30px; left: 30px; width: 50px; height: 45px; background: red; transform: rotate(-45deg); animation: pulse 1s infinite; z-index: 5; }
+    .heart::before, .heart::after { content:""; position:absolute; width:50px; height:45px; background:red; border-radius:50%; }
+    .heart::before { top:-25px; left:0; } .heart::after { left:25px; top:0; }
+    @keyframes pulse { 0% { transform: scale(1) rotate(-45deg); } 50% { transform: scale(1.2) rotate(-45deg); } 100% { transform: scale(1) rotate(-45deg); } }
+
+    .heart-container::before {
+      content: "💖 💕 💓 💗 💘 💝";
+      position: fixed; width: 100%; font-size: 2rem; animation: floatHearts 15s linear infinite;
+      pointer-events: none; top: 100%; left: 50%; transform: translateX(-50%); white-space: nowrap;
+    }
+    @keyframes floatHearts { 0% { top: 100%; opacity: 0; } 25% { opacity: 0.5; } 50% { opacity: 1; } 100% { top: -20%; opacity: 0; } }
+
+    /* Responsive tweaks */
+    @media (max-width:420px) {
+      .auth-box { width: 90%; padding: 18px; }
+      .rainbow-box h1 { font-size: 1.2rem; padding: 8px 12px; }
+      #start-btn { padding: 14px 28px; font-size: 1.1rem; }
+    }
+
+    /* Intro video skip button style */
+    .intro-skip-btn {
+      position: fixed;
+      top: 18px;
+      right: 18px;
+      z-index: 60;
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      background: rgba(0,0,0,0.5);
+      color: #fff;
+      font-size: 0.95rem;
+    }
+</style>
+
+
+</head>
+<body>
+
+  <!-- Launch Screen -->
+  <div id="start-screen">
+    <button id="start-btn">Click Me to Open</button>
+  </div>
+
+  <!-- Authentication Modal (shown after clicking Start / intro) -->
+  <div id="auth-screen" aria-hidden="true">
+    <div class="auth-box" role="dialog" aria-labelledby="auth-title" aria-modal="true">
+      <h2 id="auth-title">Please sign in</h2>
+
+      <label for="username">Username</label>
+      <input id="username" type="text" autocomplete="username" placeholder="Enter username" />
+
+      <label for="password">Password</label>
+      <input id="password" type="password" autocomplete="current-password" placeholder="Enter password" />
+
+      <div class="auth-error" id="auth-error" aria-live="polite"></div>
+
+      <div class="auth-actions">
+        <button id="login-btn">Login</button>
+        <button id="cancel-auth">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden Content -->
+  <div id="main-content" style="display: none;">
+    <video id="bg-video" autoplay muted loop> <source src="vida4.mp4" type="video/mp4" /> </video>
+
+    <audio id="bg-music" loop> <source src="InTheStars.mp3" type="audio/mpeg" /> </audio>
+
+    <div class="heart"></div>
+    <div class="heart-container"></div>
+
+    <div class="rainbow-box">
+      <h1>To the Most Beautiful Girl I Know with the Brightest Smile</h1>
+    </div>
+
+    <div class="slideshow-container">
+       <img class="slides" src="C:/Users/francis/OneDrive/Desktop/lonaa/pic1.jpeg" /> 
+      <img class="slides" src="C:/Users/francis/OneDrive/Desktop/lonaa/pic2.jpeg" />
+      <img class="slides" src="C:/Users/francis/OneDrive/Desktop/lonaa/pic3.jpeg" />
+      <img class="slides" src="C:/Users/francis/OneDrive/Desktop/lonaa/pic4.jpeg" />
+      <img class="slides" src="C:/Users/francis/OneDrive/Desktop/lonaa/pic5.jpeg" />
+      <img class="slides" src="C:/Users/francis/OneDrive/Desktop/lonaa/pic6.jpeg" />
+      <img class="slides" src="C:/Users/francis/OneDrive/Desktop/lonaa/pic7.jpeg" />
+      <img class="slides" src="C:/Users/francis/OneDrive/Desktop/lonaa/pic8.jpeg" />
+      
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      // === Set your preset credentials here ===
+      const PRESET_USER = "babe";      // <-- replace with your username
+      const PRESET_PASS = "love";   // <-- replace with your preset password
+
+      // Elements
+      const startBtn = document.getElementById("start-btn");
+      const startScreen = document.getElementById("start-screen");
+      const authScreen = document.getElementById("auth-screen");
+      const mainContent = document.getElementById("main-content");
+      const loginBtn = document.getElementById("login-btn");
+      const cancelAuth = document.getElementById("cancel-auth");
+      const usernameInput = document.getElementById("username");
+      const passwordInput = document.getElementById("password");
+      const authError = document.getElementById("auth-error");
+      const music = document.getElementById("bg-music");
+
+      // Slideshow setup
+      const slides = document.querySelectorAll(".slides");
+      let index = 0;
+      function showSlides() {
+        if (slides.length === 0) return;
+        slides.forEach(slide => slide.classList.remove("active"));
+        slides[index].classList.add("active");
+        index = (index + 1) % slides.length;
+      }
+
+      // Start button: play intro video (vida5.mp4), then show auth
+      startBtn.addEventListener("click", () => {
+        // Hide start screen but keep in DOM
+        startScreen.style.display = "none";
+
+        // Create intro video element
+        const intro = document.createElement("video");
+        intro.id = "intro-video";
+        intro.src = "vida5.mp4";            // ensure vida5.mp4 is available in the same folder or update path
+        intro.autoplay = true;
+        intro.muted = false;                // user clicked, audio allowed
+        intro.playsInline = true;
+        intro.style.position = "fixed";
+        intro.style.inset = "0";
+        intro.style.width = "100%";
+        intro.style.height = "100%";
+        intro.style.objectFit = "cover";
+        intro.style.zIndex = "50";
+        document.body.appendChild(intro);
+
+        // Skip button
+        const skipBtn = document.createElement("button");
+        skipBtn.className = "intro-skip-btn";
+        skipBtn.textContent = "Skip";
+        document.body.appendChild(skipBtn);
+
+        // Play (guard for promise)
+        intro.play().catch(err => {
+          console.warn("Intro play blocked:", err);
+        });
+
+        // Finish intro: remove intro and show auth modal
+        function finishIntro() {
+          try { intro.pause(); } catch(e) {}
+          if (intro.parentNode) intro.parentNode.removeChild(intro);
+          if (skipBtn.parentNode) skipBtn.parentNode.removeChild(skipBtn);
+          authScreen.style.display = "flex";
+          authScreen.setAttribute("aria-hidden", "false");
+          setTimeout(() => usernameInput.focus(), 100);
+        }
+
+        intro.addEventListener("ended", finishIntro);
+        skipBtn.addEventListener("click", finishIntro);
+
+        // Fallback if video errors
+        intro.addEventListener("error", () => {
+          console.warn("Intro video error, falling back to auth.");
+          setTimeout(finishIntro, 600);
+        });
+
+        // Optional: safety timeout in case 'ended' doesn't fire (e.g., very long video)
+        const maxIntroMs = 60 * 1000; // 60 seconds max
+        const fallbackTimer = setTimeout(() => {
+          if (document.body.contains(intro)) finishIntro();
+        }, maxIntroMs);
+
+        // Clear fallback timer when finished
+        function clearFallback() {
+          clearTimeout(fallbackTimer);
+        }
+        intro.addEventListener("ended", clearFallback);
+        skipBtn.addEventListener("click", clearFallback);
+        intro.addEventListener("error", clearFallback);
+      });
+
+      // Cancel authentication: return to start screen
+      cancelAuth.addEventListener("click", () => {
+        authScreen.style.display = "none";
+        authScreen.setAttribute("aria-hidden", "true");
+        startScreen.style.display = "flex";
+        authError.textContent = "";
+        usernameInput.value = "";
+        passwordInput.value = "";
+      });
+
+      // Login check against preset credentials
+      async function performLogin() {
+        authError.textContent = "";
+        const user = (usernameInput.value || "").trim();
+        const pass = passwordInput.value || "";
+
+        if (!user || !pass) {
+          authError.textContent = "Please enter both username and password.";
+          return;
+        }
+
+        if (user === PRESET_USER && pass === PRESET_PASS) {
+          authError.textContent = "";
+          authScreen.style.display = "none";
+          authScreen.setAttribute("aria-hidden", "true");
+          mainContent.style.display = "block";
+
+          // Attempt to play background music (may be blocked)
+          if (music) {
+            music.play().catch(err => {
+              console.warn("Autoplay blocked:", err);
+            });
+          }
+
+          // Initialize slideshow
+          if (slides.length > 0) {
+            showSlides();
+            setInterval(showSlides, 3000);
+          }
+        } else {
+          authError.textContent = "Invalid username or password.";
+          passwordInput.value = "";
+          passwordInput.focus();
+        }
+      }
+
+      loginBtn.addEventListener("click", performLogin);
+      [usernameInput, passwordInput].forEach(input => {
+        input.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") performLogin();
+        });
+      });
+
+      // Ensure main content hidden until auth
+      mainContent.style.display = "none";
+    });
+  </script>
+</body>
+</html>
